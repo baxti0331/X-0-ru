@@ -3,113 +3,125 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Игра</title>
+<title>Крестики-нолики с ботом</title>
 <style>
-#loaderScreen {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: linear-gradient(135deg,#74b9ff,#0984e3);
-  display: flex; justify-content: center; align-items: center; flex-direction: column;
-  color: #f0f0f0; font-size: 28px; font-weight: 700;
-  z-index: 1000;
-}
-.spinner {
-  margin-top: 20px;
-  width: 60px; height: 60px;
-  border: 8px solid rgba(240,240,240,0.3);
-  border-top: 8px solid #f0f0f0;
-  border-radius: 50%;
-  animation: spin 1.2s linear infinite;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #6dd5fa, #2980b9);
-  color: #222;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* вертикальное центрирование */
-  align-items: center;     /* горизонтальное центрирование */
-  height: 100vh;
-  user-select: none;
-  overflow: hidden;
-}
-#board {
-  display: grid;
-  grid-template-columns: repeat(3, 100px);
-  grid-template-rows: repeat(3, 100px);
-  gap: 10px;
-  z-index: 1;
-}
-.cell {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  font-size: 72px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color .3s ease;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
-}
-.cell:hover { background-color: #f0f8ff; }
-.cell.disabled {
-  cursor: default;
-  background-color: #d6eaff;
-}
-#message {
-  margin-top: 40px;
-  color: #fff;
-  font-size: 26px;
-  font-weight: 600;
-  min-height: 32px;
-  user-select: none;
-  z-index: 1;
-}
-#restartBtn {
-  margin-top: 60px;
-  padding: 16px 36px;
-  font-weight: 700;
-  font-size: 22px;
-  border: none;
-  border-radius: 14px;
-  background: linear-gradient(45deg, #ff6b6b, #ff4757);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 6px 12px rgba(255,71,87,.6);
-  transition: background-color .3s ease, box-shadow .3s ease;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  z-index: 1;
-}
-#restartBtn:hover {
-  background: linear-gradient(45deg, #ff4757, #ff2e1f);
-  box-shadow: 0 8px 20px rgba(255,46,31,.8);
-}
-#fireworksCanvas {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  pointer-events: none;
-  z-index: 10;
-}
+  #loaderScreen {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+    color: #f0f0f0; font-size: 28px; font-weight: 700; z-index: 1000;
+  }
+  .spinner {
+    margin-top: 20px; width: 60px; height: 60px;
+    border: 8px solid rgba(240, 240, 240, 0.3);
+    border-top: 8px solid #f0f0f0; border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #6dd5fa, #2980b9);
+    color: #222; margin: 0; padding: 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh; user-select: none; overflow: hidden;
+  }
+  #scoreboard {
+    color: white;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    user-select: none;
+    z-index: 1;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 10px;
+    z-index: 1;
+  }
+  .cell {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    font-size: 72px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color .3s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .cell:hover {
+    background-color: #f0f8ff;
+  }
+  .cell.disabled {
+    cursor: default;
+    background-color: #d6eaff;
+  }
+  #message {
+    margin-top: 40px;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 600;
+    min-height: 32px;
+    user-select: none;
+    z-index: 1;
+  }
+  #countdown {
+    color: #fff;
+    font-size: 26px;
+    font-weight: 600;
+    user-select: none;
+    min-width: 24px;
+    text-align: left;
+  }
+  #botToggleBtn {
+    margin-top: 40px;
+    padding: 16px 36px;
+    font-weight: 700;
+    font-size: 22px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(45deg, #ff6b6b, #ff4757);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 6px 12px rgba(255, 71, 87, .6);
+    transition: background-color .3s ease, box-shadow .3s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    z-index: 1;
+  }
+  #botToggleBtn:hover {
+    background: linear-gradient(45deg, #ff4757, #ff2e1f);
+    box-shadow: 0 8px 20px rgba(255, 46, 31, .8);
+  }
+  #fireworksCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 10;
+  }
 </style>
 </head>
 <body>
 <div id="loaderScreen">Игра загружается...<div class="spinner"></div></div>
+
+<div id="scoreboard">Игрок ❌: 0  |  Бот ⭕: 0  |  Ничьи: 0</div>
+
 <div id="board"></div>
 <div id="message">Ход: ❌</div>
-<button id="restartBtn">Начать заново</button>
+<div id="countdown"></div>
+
+<button id="botToggleBtn">Играть с ботом: Выкл</button>
+
 <canvas id="fireworksCanvas"></canvas>
 <script>
 window.onload = () => {
@@ -118,65 +130,80 @@ window.onload = () => {
     createBoard();
   }, 2500);
 };
-const boardElement = document.getElementById('board'),
-  messageElement = document.getElementById('message'),
-  restartBtn = document.getElementById('restartBtn'),
-  canvas = document.getElementById('fireworksCanvas'),
-  ctx = canvas.getContext('2d');
-let board = ['', '', '', '', '', '', '', '', ''],
-  currentPlayer = '❌',
-  gameActive = true,
-  fireworks = [],
-  animationId;
+
+const boardElement = document.getElementById('board');
+const messageElement = document.getElementById('message');
+const botToggleBtn = document.getElementById('botToggleBtn');
+const countdownElement = document.getElementById('countdown');
+const scoreboard = document.getElementById('scoreboard');
+const canvas = document.getElementById('fireworksCanvas');
+const ctx = canvas.getContext('2d');
+
+let board = ['', '', '', '', '', '', '', '', ''];
+let currentPlayer = '❌';
+let gameActive = true;
+let fireworks = [];
+let animationId;
+let isBotActive = false;
+let countdownInterval;
+
+let playerWins = 0;
+let botWins = 0;
+let draws = 0;
+
 const winningConditions = [
   [0,1,2],[3,4,5],[6,7,8],
   [0,3,6],[1,4,7],[2,5,8],
   [0,4,8],[2,4,6]
 ];
-function resizeCanvas(){
+
+function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
+
 class FireworkParticle {
   constructor(x,y,color){
     this.x = x;
     this.y = y;
     this.color = color;
     this.radius = Math.random()*3 + 2;
-    this.speedX = (Math.random() - .5)*6;
-    this.speedY = (Math.random() - .5)*6;
+    this.speedX = (Math.random()-0.5)*6;
+    this.speedY = (Math.random()-0.5)*6;
     this.alpha = 1;
-    this.gravity = .05;
-    this.decay = .015 + Math.random()*.015;
+    this.gravity = 0.05;
+    this.decay = 0.015 + Math.random()*0.015;
   }
-  update(){
+  update() {
     this.speedY += this.gravity;
     this.x += this.speedX;
     this.y += this.speedY;
     this.alpha -= this.decay;
   }
-  draw(){
+  draw() {
     ctx.save();
     ctx.globalAlpha = this.alpha;
     ctx.fillStyle = this.color;
     ctx.beginPath();
-    ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
+    ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
     ctx.fill();
     ctx.restore();
   }
 }
-function createFireworks(x,y){
+
+function createFireworks(x, y) {
   const colors = ['#ff4757','#ffa502','#1e90ff','#2ed573','#ff6b81','#3742fa'];
   for(let i=0; i<60; i++){
     const color = colors[Math.floor(Math.random()*colors.length)];
-    fireworks.push(new FireworkParticle(x,y,color));
+    fireworks.push(new FireworkParticle(x, y, color));
   }
 }
-function animateFireworks(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  for(let i=fireworks.length-1; i>=0; i--){
+
+function animateFireworks() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for(let i = fireworks.length - 1; i >= 0; i--){
     const p = fireworks[i];
     p.update();
     p.draw();
@@ -190,11 +217,13 @@ function animateFireworks(){
     cancelAnimationFrame(animationId);
   }
 }
-function showFireworks(){
+
+function showFireworks() {
   createFireworks(window.innerWidth/2, window.innerHeight/2);
   animateFireworks();
 }
-function createBoard(){
+
+function createBoard() {
   boardElement.innerHTML = '';
   board.forEach((cell, index) => {
     const cellDiv = document.createElement('div');
@@ -206,21 +235,32 @@ function createBoard(){
     boardElement.appendChild(cellDiv);
   });
 }
-function onCellClick(e){
+
+function onCellClick(e) {
   const index = e.target.dataset.index;
-  if(!gameActive || board[index] !== '') return;
+  if(!gameActive || board[index] !== '' || (isBotActive && currentPlayer === '⭕')) return;
   board[index] = currentPlayer;
   updateBoard();
   checkResult();
+  if(isBotActive && gameActive && currentPlayer === '⭕'){
+    setTimeout(botMove, 500);
+  }
 }
-function updateBoard(){
+
+function updateBoard() {
   document.querySelectorAll('.cell').forEach(cell => {
     const idx = cell.dataset.index;
     cell.textContent = board[idx];
     if(board[idx] !== '') cell.classList.add('disabled');
+    else cell.classList.remove('disabled');
   });
 }
-function checkResult(){
+
+function updateScoreboard() {
+  scoreboard.textContent = `Игрок ❌: ${playerWins}  |  Бот ⭕: ${botWins}  |  Ничьи: ${draws}`;
+}
+
+function checkResult() {
   let roundWon = false;
   for(const condition of winningConditions){
     const [a,b,c] = condition;
@@ -235,17 +275,34 @@ function checkResult(){
     gameActive = false;
     highlightWinningCells();
     showFireworks();
+
+    if(currentPlayer === '❌') playerWins++;
+    else if(currentPlayer === '⭕') botWins++;
+
+    updateScoreboard();
+
+    if(isBotActive){
+      startCountdownAndRestart();
+    }
     return;
   }
   if(!board.includes('')){
     messageElement.textContent = 'Ничья! 🤝';
     gameActive = false;
+    draws++;
+    updateScoreboard();
+
+    if(isBotActive){
+      startCountdownAndRestart();
+    }
     return;
   }
   currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
   messageElement.textContent = `Ход: ${currentPlayer}`;
+  countdownElement.textContent = '';
 }
-function highlightWinningCells(){
+
+function highlightWinningCells() {
   for(const condition of winningConditions){
     const [a,b,c] = condition;
     if(board[a] !== '' && board[a] === board[b] && board[b] === board[c]){
@@ -255,15 +312,103 @@ function highlightWinningCells(){
     }
   }
 }
-restartBtn.addEventListener('click', () => {
+
+function startCountdownAndRestart() {
+  let timeLeft = 2;
+  countdownElement.textContent = timeLeft;
+  clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    timeLeft--;
+    if(timeLeft <= 0){
+      clearInterval(countdownInterval);
+      countdownElement.textContent = '';
+      restartGame();
+    } else {
+      countdownElement.textContent = timeLeft;
+    }
+  }, 1000);
+}
+
+function restartGame() {
   board = ['', '', '', '', '', '', '', '', ''];
   currentPlayer = '❌';
   gameActive = true;
   messageElement.textContent = `Ход: ${currentPlayer}`;
+  countdownElement.textContent = '';
   createBoard();
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   fireworks = [];
   cancelAnimationFrame(animationId);
+}
+
+// Улучшенный бот с 70% побед
+function botMove() {
+  if (!gameActive) return;
+
+  function findWinningMove(player) {
+    for (const condition of winningConditions) {
+      const [a, b, c] = condition;
+      const line = [board[a], board[b], board[c]];
+      if (line.filter(cell => cell === player).length === 2 && line.includes('')) {
+        return condition[line.indexOf('')];
+      }
+    }
+    return null;
+  }
+
+  const randomChance = Math.random();
+
+  // 70% шанс сделать идеальный ход (выиграть или блокировать)
+  if (randomChance < 0.7) {
+    let move = findWinningMove('⭕');
+    if (move !== null) {
+      board[move] = '⭕';
+      updateBoard();
+      checkResult();
+      return;
+    }
+    move = findWinningMove('❌');
+    if (move !== null) {
+      board[move] = '⭕';
+      updateBoard();
+      checkResult();
+      return;
+    }
+  }
+
+  // 20% шанс взять центр если свободен
+  if (randomChance >= 0.7 && randomChance < 0.9) {
+    if (board[4] === '') {
+      board[4] = '⭕';
+      updateBoard();
+      checkResult();
+      return;
+    }
+  }
+
+  // 10% шанс занять свободный угол, если центр занят
+  const corners = [0, 2, 6, 8].filter(i => board[i] === '');
+  if (corners.length > 0 && randomChance >= 0.9) {
+    const corner = corners[Math.floor(Math.random() * corners.length)];
+    board[corner] = '⭕';
+    updateBoard();
+    checkResult();
+    return;
+  }
+
+  // Иначе случайный ход
+  const emptyIndices = board.map((val, idx) => val === '' ? idx : -1).filter(idx => idx !== -1);
+  if (emptyIndices.length === 0) return;
+  const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+  board[randomIndex] = '⭕';
+  updateBoard();
+  checkResult();
+}
+
+botToggleBtn.addEventListener('click', () => {
+  isBotActive = !isBotActive;
+  botToggleBtn.textContent = `Играть с ботом: ${isBotActive ? 'Вкл' : 'Выкл'}`;
+  restartGame();
 });
 </script>
 </body>
