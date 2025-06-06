@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Игра</title>
+<style>
+#loaderScreen{position:fixed;top:0;left:0;width:100vw;height:100vh;background:linear-gradient(135deg,#74b9ff,#0984e3);display:flex;justify-content:center;align-items:center;flex-direction:column;color:#f0f0f0;font-size:28px;font-weight:700;z-index:1000;}
+.spinner{margin-top:20px;width:60px;height:60px;border:8px solid rgba(240,240,240,0.3);border-top:8px solid #f0f0f0;border-radius:50%;animation:spin 1.2s linear infinite;}
+@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#6dd5fa,#2980b9);color:#222;margin:0;padding:20px;display:flex;flex-direction:column;align-items:center;height:100vh;user-select:none;overflow:hidden;}
+#board{display:grid;grid-template-columns:repeat(3,100px);grid-template-rows:repeat(3,100px);gap:10px;z-index:1;}
+.cell{background:#fff;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.15);font-size:72px;display:flex;justify-content:center;align-items:center;cursor:pointer;transition:background-color .3s ease;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;}
+.cell:hover{background-color:#f0f8ff;}
+.cell.disabled{cursor:default;background-color:#d6eaff;}
+#message{margin-top:40px;color:#fff;font-size:26px;font-weight:600;min-height:32px;user-select:none;z-index:1;}
+#restartBtn{margin-top:60px;padding:16px 36px;font-weight:700;font-size:22px;border:none;border-radius:14px;background:linear-gradient(45deg,#ff6b6b,#ff4757);color:#fff;cursor:pointer;box-shadow:0 6px 12px rgba(255,71,87,.6);transition:background-color .3s ease,box-shadow .3s ease;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:1;}
+#restartBtn:hover{background:linear-gradient(45deg,#ff4757,#ff2e1f);box-shadow:0 8px 20px rgba(255,46,31,.8);}
+#fireworksCanvas{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:10;}
+</style>
+</head>
+<body>
+<div id="loaderScreen">Игра загружается...<div class="spinner"></div></div>
+<div id="board"></div>
+<div id="message">Ход: ❌</div>
+<button id="restartBtn">Начать заново</button>
+<canvas id="fireworksCanvas"></canvas>
+<script>
+window.onload=()=>{setTimeout(()=>{document.getElementById('loaderScreen').style.display='none';createBoard();},2500);}
+const boardElement=document.getElementById('board'),messageElement=document.getElementById('message'),restartBtn=document.getElementById('restartBtn'),canvas=document.getElementById('fireworksCanvas'),ctx=canvas.getContext('2d');
+let board=['','','','','','','','',''],currentPlayer='❌',gameActive=true,fireworks=[],animationId;
+const winningConditions=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+class FireworkParticle{constructor(x,y,color){this.x=x;this.y=y;this.color=color;this.radius=Math.random()*3+2;this.speedX=(Math.random()-.5)*6;this.speedY=(Math.random()-.5)*6;this.alpha=1;this.gravity=.05;this.decay=.015+Math.random()*.015;}
+update(){this.speedY+=this.gravity;this.x+=this.speedX;this.y+=this.speedY;this.alpha-=this.decay;}
+draw(){ctx.save();ctx.globalAlpha=this.alpha;ctx.fillStyle=this.color;ctx.beginPath();ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);ctx.fill();ctx.restore();}}
+function createFireworks(x,y){const colors=['#ff4757','#ffa502','#1e90ff','#2ed573','#ff6b81','#3742fa'];for(let i=0;i<60;i++){const color=colors[Math.floor(Math.random()*colors.length)];fireworks.push(new FireworkParticle(x,y,color));}}
+function animateFireworks(){ctx.clearRect(0,0,canvas.width,canvas.height);for(let i=fireworks.length-1;i>=0;i--){const p=fireworks[i];p.update();p.draw();if(p.alpha<=0){fireworks.splice(i,1);}}if(fireworks.length>0){animationId=requestAnimationFrame(animateFireworks);}else{cancelAnimationFrame(animationId);}}
+function showFireworks(){createFireworks(window.innerWidth/2,window.innerHeight/2);animateFireworks();}
+function createBoard(){boardElement.innerHTML='';board.forEach((cell,index)=>{const cellDiv=document.createElement('div');cellDiv.classList.add('cell');cellDiv.dataset.index=index;cellDiv.textContent=cell;if(cell!=='')cellDiv.classList.add('disabled');cellDiv.addEventListener('click',onCellClick);boardElement.appendChild(cellDiv);});}
+function onCellClick(e){const index=e.target.dataset.index;if(!gameActive||board[index]!=='')return;board[index]=currentPlayer;updateBoard();checkResult();}
+function updateBoard(){document.querySelectorAll('.cell').forEach(cell=>{const idx=cell.dataset.index;cell.textContent=board[idx];if(board[idx]!=='')cell.classList.add('disabled');});}
+function checkResult(){let roundWon=false;for(const condition of winningConditions){const[a,b,c]=condition;if(board[a]===''||board[b]===''||board[c]==='')continue;if(board[a]===board[b]&&board[b]===board[c]){roundWon=true;break;}}
+if(roundWon){messageElement.textContent=`Победитель: ${currentPlayer}! 🎉`;gameActive=false;highlightWinningCells();showFireworks();return;}
+if(!board.includes('')){messageElement.textContent='Ничья! 🤝';gameActive=false;return;}
+currentPlayer=currentPlayer==='❌'?'⭕':'❌';messageElement.textContent=`Ход: ${currentPlayer}`;}
+function highlightWinningCells(){for(const condition of winningConditions){const[a,b,c]=condition;if(board[a]!==''&&board[a]===board[b]&&board[b]===board[c]){document.querySelector(`.cell[data-index="${a}"]`).style.backgroundColor='#90ee90';document.querySelector(`.cell[data-index="${b}"]`).style.backgroundColor='#90ee90';document.querySelector(`.cell[data-index="${c}"]`).style.backgroundColor='#90ee90';}}}
+restartBtn.addEventListener('click',()=>{board=['','','','','','','','',''];currentPlayer='❌';gameActive=true;messageElement.textContent=`Ход: ${currentPlayer}`;createBoard();ctx.clearRect(0,0,canvas.width,canvas.height);fireworks=[];cancelAnimationFrame(animationId);});
+</script>
+</body>
+</html>
