@@ -81,27 +81,6 @@
     min-width: 24px;
     text-align: left;
   }
-  #botToggleBtn {
-    margin-top: 40px;
-    padding: 16px 36px;
-    font-weight: 700;
-    font-size: 22px;
-    border: none;
-    border-radius: 14px;
-    background: linear-gradient(45deg, #ff6b6b, #ff4757);
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 6px 12px rgba(255, 71, 87, .6);
-    transition: background-color .3s ease, box-shadow .3s ease;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    z-index: 1;
-  }
-  #botToggleBtn:hover {
-    background: linear-gradient(45deg, #ff4757, #ff2e1f);
-    box-shadow: 0 8px 20px rgba(255, 46, 31, .8);
-  }
   #fireworksCanvas {
     position: fixed;
     top: 0; left: 0;
@@ -120,8 +99,6 @@
 <div id="message">Ход: ❌</div>
 <div id="countdown"></div>
 
-<button id="botToggleBtn">Играть с ботом: Выкл</button>
-
 <canvas id="fireworksCanvas"></canvas>
 <script>
 window.onload = () => {
@@ -133,7 +110,6 @@ window.onload = () => {
 
 const boardElement = document.getElementById('board');
 const messageElement = document.getElementById('message');
-const botToggleBtn = document.getElementById('botToggleBtn');
 const countdownElement = document.getElementById('countdown');
 const scoreboard = document.getElementById('scoreboard');
 const canvas = document.getElementById('fireworksCanvas');
@@ -144,8 +120,6 @@ let currentPlayer = '❌';
 let gameActive = true;
 let fireworks = [];
 let animationId;
-let isBotActive = false;
-let countdownInterval;
 
 let playerWins = 0;
 let botWins = 0;
@@ -238,11 +212,11 @@ function createBoard() {
 
 function onCellClick(e) {
   const index = e.target.dataset.index;
-  if(!gameActive || board[index] !== '' || (isBotActive && currentPlayer === '⭕')) return;
+  if(!gameActive || board[index] !== '' || currentPlayer === '⭕') return;
   board[index] = currentPlayer;
   updateBoard();
   checkResult();
-  if(isBotActive && gameActive && currentPlayer === '⭕'){
+  if(gameActive && currentPlayer === '⭕'){
     setTimeout(botMove, 500);
   }
 }
@@ -281,9 +255,7 @@ function checkResult() {
 
     updateScoreboard();
 
-    if(isBotActive){
-      startCountdownAndRestart();
-    }
+    startCountdownAndRestart();
     return;
   }
   if(!board.includes('')){
@@ -292,9 +264,7 @@ function checkResult() {
     draws++;
     updateScoreboard();
 
-    if(isBotActive){
-      startCountdownAndRestart();
-    }
+    startCountdownAndRestart();
     return;
   }
   currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
@@ -313,6 +283,7 @@ function highlightWinningCells() {
   }
 }
 
+let countdownInterval;
 function startCountdownAndRestart() {
   let timeLeft = 2;
   countdownElement.textContent = timeLeft;
@@ -404,12 +375,6 @@ function botMove() {
   updateBoard();
   checkResult();
 }
-
-botToggleBtn.addEventListener('click', () => {
-  isBotActive = !isBotActive;
-  botToggleBtn.textContent = `Играть с ботом: ${isBotActive ? 'Вкл' : 'Выкл'}`;
-  restartGame();
-});
 </script>
 </body>
 </html>
