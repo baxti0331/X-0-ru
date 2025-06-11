@@ -12,7 +12,6 @@
     margin: 0; padding: 20px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     height: 100vh; user-select: none;
-    overflow: hidden;
   }
   #scoreboard {
     color: white;
@@ -68,7 +67,7 @@
     font-weight: 600;
     min-height: 36px;
   }
-  #hintButton {
+  button {
     font-size: 22px;
     padding: 12px 28px;
     border: none;
@@ -77,9 +76,11 @@
     user-select: none;
     font-weight: 700;
     margin-top: 10px;
+    transition: background-color 0.3s ease;
+  }
+  #hintButton {
     background: #00b894;
     color: white;
-    transition: background-color 0.3s ease;
   }
   #hintButton:hover:not(:disabled) {
     background: #55efc4;
@@ -88,31 +89,9 @@
     background: #555;
     cursor: default;
   }
-  #loadingScreen {
-    position: fixed;
-    inset: 0;
-    background: #2980b9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-size: 28px;
-    font-weight: 700;
-    z-index: 1000;
-  }
-  #fireworksCanvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 1001;
-  }
 </style>
 </head>
 <body>
-
-<div id="loadingScreen">Загрузка игры...</div>
 
 <div id="scoreboard">Очки: 0</div>
 
@@ -120,13 +99,193 @@
 
 <div id="bottomLetters"></div>
 
+<!-- Кнопка "Проверить" удалена -->
+
 <button id="hintButton" disabled>Подсказка</button>
 
 <div id="message"></div>
 
-<canvas id="fireworksCanvas"></canvas>
+<script>
+const words = [
+  "абрик", "аванс", "аврал", "автор", "агент", "адрес", "азарт", "акция", "акула", "актер",
+  "алмаз", "альфа", "амбар", "анонс", "апорт", "арена", "арест", "армия", "атака", "афера",
+  "базис", "байка", "балет", "балка", "банда", "банка", "барон", "бегле", "белок", "билет",
+  "бинок", "биржа", "богат", "бокал", "болид", "бонус", "борец", "босс", "броня", "будка",
+  "буфет", "бухта", "взлет", "вилка", "винт", "вирус", "волна", "время", "выбор", "вышка",
+  "газон", "гайка", "галка", "гамма", "гараж", "гвард", "гвозд", "гений", "герой", "гитара",
+  "глава", "гнезд", "голос", "грань", "графа", "губка", "густо", "дача", "дверь", "дедук",
+  "дележ", "детка", "дичь", "долг", "домик", "донор", "дорог", "доска", "драка", "драма",
+  "дробь", "друг", "дымок", "еврей", "жабра", "жажда", "ждать", "желез", "жена", "жердь",
+  "живот", "жирок", "жница", "забег", "закон", "засор", "заход", "заяц", "звено", "звонк",
+  "зебра", "зодчий", "зола", "зона", "зубец", "игрок", "идол", "изба", "икона", "импорт",
+  "индик", "искры", "испуг", "кабан", "казак", "калий", "калит", "камин", "канал", "каска",
+  "квант", "кедр", "коза", "козел", "койка", "кокон", "колба", "колон", "комар", "конек",
+  "копия", "корка", "короб", "коса", "котел", "крага", "кран", "кредо", "крик", "кроль",
+  "круг", "кубик", "кулак", "купаж", "курс", "кусок", "ладан", "ладья", "лакей", "лампа",
+  "ланка", "лапка", "ларец", "латте", "лепет", "леска", "лето", "лидер", "лист", "литер",
+  "ложка", "локон", "лоза", "лыжа", "мажор", "мазок", "майор", "макет", "малый", "мантия",
+  "марка", "маска", "мастер", "матка", "медик", "мелод", "милка", "мираж", "миска", "молва",
+  "мороз", "моряк", "музей", "мусор", "набор", "накал", "напев", "наука", "начал", "невод",
+  "немец", "низко", "нитка", "новак", "нога", "носик", "обида", "облик", "огонь", "одежда",
+  "ожог", "озеро", "округ", "олива", "опера", "опасн", "оплот", "опора", "осина", "остов",
+  "отвал", "отель", "отказ", "отлив", "отрез", "офсет", "очаг", "пакет", "панда", "парус",
+  "паста", "пауза", "пена", "перец", "песок", "пикет", "пила", "план", "племя", "плоть",
+  "побег", "повар", "подвал", "поднос", "позыв", "пойма", "покуп", "поле", "полос", "помпа",
+  "порог", "посох", "поток", "почва", "почка", "празд", "прима", "проба", "пруд", "прыжок",
+  "птица", "пушка", "путь", "пчела", "работа", "радио", "разговор", "ракет", "рамка", "рапорт",
+  "растор", "рвать", "речка", "рисок", "рота", "рубка", "рулет", "рулон", "рыбак", "рысь",
+  "ряда", "рядок", "сабля", "сайт", "сало", "самец", "самка", "сапог", "сарай", "сварка",
+  "свеча", "сектор", "сено", "сила", "сироп", "сказка", "скала", "сквер", "склад", "склон",
+  "слава", "слово", "снова", "снос", "сокол", "солид", "сосуд", "спектр", "спина", "спичка",
+  "спор", "способ", "среда", "срок", "сталь", "степь", "стих", "стол", "страх", "строка",
+  "ступа", "суть", "сфера", "сырок", "сыщик", "табак", "тайна", "талант", "талия", "танец",
+  "тара", "тариф", "театр", "тело", "темп", "тенор", "терем", "тигр", "тимус", "тираж",
+  "тихое", "точка", "трава", "треск"
+];
 
-<script src="script.js"></script>
+let score = 0;
+let usedIndexes = new Set();
+let currentWord = "";
+let bottomLettersArr = [];
+let topSlotsArr = [];
+let hintUsed = false;
+
+const scoreboard = document.getElementById('scoreboard');
+const topSlots = document.getElementById('topSlots');
+const bottomLetters = document.getElementById('bottomLetters');
+// Кнопка "Проверить" теперь отсутствует, переменная удалена
+const hintButton = document.getElementById('hintButton');
+const message = document.getElementById('message');
+
+function pickNewWord() {
+  if (usedIndexes.size === words.length) {
+    message.style.color = "#fff";
+    message.textContent = "Слова закончились! Игра окончена.";
+    topSlots.innerHTML = "";
+    bottomLetters.innerHTML = "";
+    hintButton.disabled = true;
+    return false;
+  }
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * words.length);
+  } while (usedIndexes.has(idx));
+  usedIndexes.add(idx);
+  currentWord = words[idx];
+  return true;
+}
+
+function shuffleArray(arr) {
+  for(let i = arr.length -1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function setupGame() {
+  hintUsed = false;
+  message.textContent = "";
+  hintButton.disabled = false;
+
+  topSlotsArr = new Array(currentWord.length).fill(null);
+  bottomLettersArr = shuffleArray(currentWord.split(''));
+
+  renderSlots();
+  renderBottomLetters();
+}
+
+function renderSlots() {
+  topSlots.innerHTML = "";
+  topSlotsArr.forEach((letter, idx) => {
+    const slot = document.createElement('div');
+    slot.classList.add('slot');
+    if(letter !== null) {
+      slot.textContent = letter.toUpperCase();
+      slot.classList.add('filled');
+      if(letter === currentWord[idx]) {
+        slot.classList.add('correct');
+      }
+    } else {
+      slot.textContent = "";
+    }
+    slot.onclick = () => {
+      if(letter === null) return;
+      bottomLettersArr.push(letter);
+      topSlotsArr[idx] = null;
+      renderSlots();
+      renderBottomLetters();
+      message.textContent = "";
+    };
+    topSlots.appendChild(slot);
+  });
+}
+
+function renderBottomLetters() {
+  bottomLetters.innerHTML = "";
+  bottomLettersArr.forEach((letter, idx) => {
+    const letterDiv = document.createElement('div');
+    letterDiv.classList.add('letter');
+    letterDiv.textContent = letter.toUpperCase();
+    letterDiv.onclick = () => {
+      const firstEmpty = topSlotsArr.indexOf(null);
+      if(firstEmpty === -1) return;
+      topSlotsArr[firstEmpty] = letter;
+      bottomLettersArr.splice(idx, 1);
+      renderSlots();
+      renderBottomLetters();
+      message.textContent = "";
+      // Автоматическая проверка при заполнении всех слотов:
+      if (!topSlotsArr.includes(null)) checkAnswer();
+    }
+    bottomLetters.appendChild(letterDiv);
+  });
+}
+
+function checkAnswer() {
+  const answer = topSlotsArr.join('');
+  if(answer === currentWord) {
+    score++;
+    scoreboard.textContent = `Очки: ${score}`;
+    message.style.color = "#7FFF00";
+    message.textContent = "Правильно! Следующее слово...";
+    hintButton.disabled = true;
+    setTimeout(() => {
+      if(pickNewWord()) {
+        setupGame();
+      }
+    }, 1300);
+  } else {
+    message.style.color = "#FF6347";
+    message.textContent = "Неверно! Попробуй ещё.";
+  }
+}
+
+hintButton.onclick = () => {
+  if(hintUsed) return;
+  hintUsed = true;
+  // Подсказка — показать одну букву в верхних слотах на правильном месте
+  for(let i = 0; i < topSlotsArr.length; i++) {
+    if(topSlotsArr[i] !== currentWord[i]) {
+      if(topSlotsArr[i] !== null) {
+        bottomLettersArr.push(topSlotsArr[i]);
+      }
+      topSlotsArr[i] = currentWord[i];
+      const idx = bottomLettersArr.indexOf(currentWord[i]);
+      if(idx !== -1) bottomLettersArr.splice(idx, 1);
+      break;
+    }
+  }
+  renderSlots();
+  renderBottomLetters();
+  hintButton.disabled = true;
+  message.textContent = "Подсказка использована";
+}
+
+if(pickNewWord()) {
+  setupGame();
+}
+</script>
 
 </body>
 </html>
