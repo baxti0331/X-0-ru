@@ -99,8 +99,6 @@
 
 <div id="bottomLetters"></div>
 
-<!-- Кнопка "Проверить" удалена -->
-
 <button id="hintButton" disabled>Подсказка</button>
 
 <div id="message"></div>
@@ -149,13 +147,31 @@ let currentWord = "";
 let bottomLettersArr = [];
 let topSlotsArr = [];
 let hintUsed = false;
+let playerName = "";
 
 const scoreboard = document.getElementById('scoreboard');
 const topSlots = document.getElementById('topSlots');
 const bottomLetters = document.getElementById('bottomLetters');
-// Кнопка "Проверить" теперь отсутствует, переменная удалена
 const hintButton = document.getElementById('hintButton');
 const message = document.getElementById('message');
+
+function saveGame() {
+  localStorage.setItem('anagrams_playerName', playerName);
+  localStorage.setItem('anagrams_score', score);
+}
+
+function loadGame() {
+  const savedName = localStorage.getItem('anagrams_playerName');
+  const savedScore = localStorage.getItem('anagrams_score');
+  if(savedName) playerName = savedName;
+  if(savedScore) score = Number(savedScore);
+}
+
+function updateScoreboard() {
+  scoreboard.textContent = playerName
+    ? `Игрок: ${playerName} — Очки: ${score}`
+    : `Очки: ${score}`;
+}
 
 function pickNewWord() {
   if (usedIndexes.size === words.length) {
@@ -193,6 +209,7 @@ function setupGame() {
 
   renderSlots();
   renderBottomLetters();
+  updateScoreboard();
 }
 
 function renderSlots() {
@@ -235,7 +252,6 @@ function renderBottomLetters() {
       renderSlots();
       renderBottomLetters();
       message.textContent = "";
-      // Автоматическая проверка при заполнении всех слотов:
       if (!topSlotsArr.includes(null)) checkAnswer();
     }
     bottomLetters.appendChild(letterDiv);
@@ -246,7 +262,8 @@ function checkAnswer() {
   const answer = topSlotsArr.join('');
   if(answer === currentWord) {
     score++;
-    scoreboard.textContent = `Очки: ${score}`;
+    updateScoreboard();
+    saveGame();
     message.style.color = "#7FFF00";
     message.textContent = "Правильно! Следующее слово...";
     hintButton.disabled = true;
@@ -264,7 +281,6 @@ function checkAnswer() {
 hintButton.onclick = () => {
   if(hintUsed) return;
   hintUsed = true;
-  // Подсказка — показать одну букву в верхних слотах на правильном месте
   for(let i = 0; i < topSlotsArr.length; i++) {
     if(topSlotsArr[i] !== currentWord[i]) {
       if(topSlotsArr[i] !== null) {
@@ -282,9 +298,20 @@ hintButton.onclick = () => {
   message.textContent = "Подсказка использована";
 }
 
-if(pickNewWord()) {
-  setupGame();
+// Инициализация имени и загрузка прогресса
+function init() {
+  loadGame();
+  if(!playerName) {
+    playerName = prompt("Введите ваше имя:", "") || "Игрок";
+    saveGame();
+  }
+  updateScoreboard();
+  if(pickNewWord()) {
+    setupGame();
+  }
 }
+
+init();
 </script>
 
 </body>
