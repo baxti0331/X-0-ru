@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Крестики-нолики с ботом</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Игра: Анаграммы</title>
 <style>
   #loaderScreen {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -36,345 +36,228 @@
     user-select: none;
     z-index: 1;
   }
-  #board {
-    display: grid;
-    grid-template-columns: repeat(3, 100px);
-    grid-template-rows: repeat(3, 100px);
-    gap: 10px;
-    z-index: 1;
+  #wordContainer {
+    display: flex;
+    gap: 12px;
+    font-size: 64px;
+    color: white;
+    font-weight: 700;
+    user-select: none;
+    margin-bottom: 30px;
   }
-  .cell {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    font-size: 72px;
+  .letter {
+    background: rgba(255 255 255 / 0.2);
+    border-radius: 10px;
+    width: 60px;
+    height: 80px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    transition: background-color .3s ease;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
     user-select: none;
+    transition: background-color 0.3s ease;
   }
-  .cell:hover {
-    background-color: #f0f8ff;
-  }
-  .cell.disabled {
-    cursor: default;
-    background-color: #d6eaff;
+  .letter:hover {
+    background: rgba(255 255 255 / 0.4);
   }
   #message {
-    margin-top: 40px;
+    margin-top: 20px;
     color: #fff;
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 600;
-    min-height: 32px;
+    min-height: 36px;
     user-select: none;
     z-index: 1;
   }
-  #countdown {
-    color: #fff;
-    font-size: 26px;
-    font-weight: 600;
+  #checkButton {
+    margin-top: 30px;
+    font-size: 22px;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 14px;
+    background: #0984e3;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
     user-select: none;
-    min-width: 24px;
-    text-align: left;
+    transition: background-color 0.3s ease;
   }
-  #fireworksCanvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    pointer-events: none;
-    z-index: 10;
+  #checkButton:hover:not(:disabled) {
+    background: #74b9ff;
+  }
+  #checkButton:disabled {
+    background: #777;
+    cursor: default;
   }
 </style>
 </head>
 <body>
 <div id="loaderScreen">Игра загружается...<div class="spinner"></div></div>
 
-<div id="scoreboard">Игрок ❌: 0  |  Бот ⭕: 0  |  Ничьи: 0</div>
+<div id="scoreboard">Очки: 0</div>
 
-<div id="board"></div>
-<div id="message">Ход: ❌</div>
-<div id="countdown"></div>
+<div id="wordContainer"></div>
 
-<canvas id="fireworksCanvas"></canvas>
+<button id="checkButton" disabled>Проверить</button>
+
+<div id="message"></div>
+
 <script>
 window.onload = () => {
   setTimeout(() => {
     document.getElementById('loaderScreen').style.display = 'none';
-    createBoard();
-  }, 2500);
+    startGame();
+  }, 1500);
 };
 
-const boardElement = document.getElementById('board');
-const messageElement = document.getElementById('message');
-const countdownElement = document.getElementById('countdown');
-const scoreboard = document.getElementById('scoreboard');
-const canvas = document.getElementById('fireworksCanvas');
-const ctx = canvas.getContext('2d');
-
-let board = ['', '', '', '', '', '', '', '', ''];
-let currentPlayer = '❌';
-let gameActive = true;
-let fireworks = [];
-let animationId;
-
-let playerWins = 0;
-let botWins = 0;
-let draws = 0;
-
-const winningConditions = [
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6]
+const words = [
+  "абрик", "аванс", "аврал", "автор", "агент", "адрес", "азарт", "акция", "акула", "актер",
+  "алмаз", "альфа", "амбар", "анонс", "апорт", "арена", "арест", "армия", "атака", "афера",
+  "базис", "байка", "балет", "балка", "банда", "банка", "барон", "бегле", "белок", "билет",
+  "бинок", "биржа", "богат", "бокал", "болид", "бонус", "борец", "босс", "броня", "будка",
+  "буфет", "бухта", "взлет", "вилка", "винт", "вирус", "волна", "время", "выбор", "вышка",
+  "газон", "гайка", "галка", "гамма", "гараж", "гвард", "гвозд", "гений", "герой", "гитара",
+  "глава", "гнезд", "голос", "грань", "графа", "губка", "густо", "дача", "дверь", "дедук",
+  "дележ", "детка", "дичь", "долг", "домик", "донор", "дорог", "доска", "драка", "драма",
+  "дробь", "друг", "дымок", "еврей", "жабра", "жажда", "ждать", "желез", "жена", "жердь",
+  "живот", "жирок", "жница", "забег", "закон", "засор", "заход", "заяц", "звено", "звонк",
+  "зебра", "зодчий", "зола", "зона", "зубец", "игрок", "идол", "изба", "икона", "импорт",
+  "индик", "искры", "испуг", "кабан", "казак", "калий", "калит", "камин", "канал", "каска",
+  "квант", "кедр", "коза", "козел", "койка", "кокон", "колба", "колон", "комар", "конек",
+  "копия", "корка", "короб", "коса", "котел", "крага", "кран", "кредо", "крик", "кроль",
+  "круг", "кубик", "кулак", "купаж", "курс", "кусок", "ладан", "ладья", "лакей", "лампа",
+  "ланка", "лапка", "ларец", "латте", "лепет", "леска", "лето", "лидер", "лист", "литер",
+  "ложка", "локон", "лоза", "лыжа", "мажор", "мазок", "майор", "макет", "малый", "мантия",
+  "марка", "маска", "мастер", "матка", "медик", "мелод", "милка", "мираж", "миска", "молва",
+  "мороз", "моряк", "музей", "мусор", "набор", "накал", "напев", "наука", "начал", "невод",
+  "немец", "низко", "нитка", "новак", "нога", "носик", "обида", "облик", "огонь", "одежда",
+  "ожог", "озеро", "округ", "олива", "опера", "опасн", "оплот", "опора", "осина", "остов",
+  "отвал", "отель", "отказ", "отлив", "отрез", "офсет", "очаг", "пакет", "панда", "парус",
+  "паста", "пауза", "пена", "перец", "песок", "пикет", "пила", "план", "племя", "плоть",
+  "побег", "повар", "подвал", "поднос", "позыв", "пойма", "покуп", "поле", "полос", "помпа",
+  "порог", "посох", "поток", "почва", "почка", "празд", "прима", "проба", "пруд", "прыжок",
+  "птица", "пушка", "путь", "пчела", "работа", "радио", "разговор", "ракет", "рамка", "рапорт",
+  "растор", "рвать", "речка", "рисок", "рота", "рубка", "рулет", "рулон", "рыбак", "рысь",
+  "ряда", "рядок", "сабля", "сайт", "сало", "самец", "самка", "сапог", "сарай", "сварка",
+  "свеча", "сектор", "сено", "сила", "сироп", "сказка", "скала", "сквер", "склад", "склон",
+  "слава", "слово", "снова", "снос", "сокол", "солид", "сосуд", "спектр", "спина", "спичка",
+  "спор", "способ", "среда", "срок", "сталь", "степь", "стих", "стол", "страх", "строка",
+  "ступа", "суть", "сфера", "сырок", "сыщик", "табак", "тайна", "талант", "талия", "танец",
+  "тара", "тариф", "театр", "тело", "темп", "тенор", "терем", "тигр", "тимус", "тираж",
+  "тихое", "точка", "трава", "треск"
 ];
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+// Скопируй/вставь сюда полный словарь из 1000+ слов, если нужно.
 
-class FireworkParticle {
-  constructor(x,y,color){
-    this.x = x;
-    this.y = y;
-    this.color = color;
-    this.radius = Math.random()*3 + 2;
-    this.speedX = (Math.random()-0.5)*6;
-    this.speedY = (Math.random()-0.5)*6;
-    this.alpha = 1;
-    this.gravity = 0.05;
-    this.decay = 0.015 + Math.random()*0.015;
+let score = 0;
+let usedIndexes = new Set();
+let currentWord = "";
+let shuffledWord = [];
+const scoreboard = document.getElementById('scoreboard');
+const wordContainer = document.getElementById('wordContainer');
+const checkButton = document.getElementById('checkButton');
+const message = document.getElementById('message');
+
+function shuffleArray(arr) {
+  // Фишка: простой тасование Фишера-Йетса
+  for(let i = arr.length -1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  update() {
-    this.speedY += this.gravity;
-    this.x += this.speedX;
-    this.y += this.speedY;
-    this.alpha -= this.decay;
+  return arr;
+}
+
+function pickNewWord() {
+  if (usedIndexes.size === words.length) {
+    // Все слова использованы
+    message.textContent = "Слова закончились! Игра окончена.";
+    wordContainer.innerHTML = "";
+    checkButton.disabled = true;
+    return false;
   }
-  draw() {
-    ctx.save();
-    ctx.globalAlpha = this.alpha;
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
-    ctx.fill();
-    ctx.restore();
-  }
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * words.length);
+  } while (usedIndexes.has(idx));
+  usedIndexes.add(idx);
+  currentWord = words[idx];
+  return true;
 }
 
-function createFireworks(x, y) {
-  const colors = ['#ff4757','#ffa502','#1e90ff','#2ed573','#ff6b81','#3742fa'];
-  for(let i=0; i<60; i++){
-    const color = colors[Math.floor(Math.random()*colors.length)];
-    fireworks.push(new FireworkParticle(x, y, color));
-  }
+function displayShuffledWord() {
+  // Перемешать буквы текущего слова (но не так, чтобы совпало с оригиналом)
+  let arr = currentWord.split('');
+  do {
+    arr = shuffleArray(arr.slice());
+  } while(arr.join('') === currentWord);
+  shuffledWord = arr;
+  renderWord();
+  checkButton.disabled = false;
+  message.textContent = "";
 }
 
-function animateFireworks() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for(let i = fireworks.length - 1; i >= 0; i--){
-    const p = fireworks[i];
-    p.update();
-    p.draw();
-    if(p.alpha <= 0){
-      fireworks.splice(i,1);
-    }
-  }
-  if(fireworks.length > 0){
-    animationId = requestAnimationFrame(animateFireworks);
-  } else {
-    cancelAnimationFrame(animationId);
-  }
-}
-
-function showFireworks() {
-  createFireworks(window.innerWidth/2, window.innerHeight/2);
-  animateFireworks();
-}
-
-function createBoard() {
-  boardElement.innerHTML = '';
-  board.forEach((cell, index) => {
-    const cellDiv = document.createElement('div');
-    cellDiv.classList.add('cell');
-    cellDiv.dataset.index = index;
-    cellDiv.textContent = cell;
-    if(cell !== '') cellDiv.classList.add('disabled');
-    cellDiv.addEventListener('click', onCellClick);
-    boardElement.appendChild(cellDiv);
-  });
-}
-
-function onCellClick(e) {
-  const index = e.target.dataset.index;
-  if(!gameActive || board[index] !== '' || currentPlayer === '⭕') return;
-  board[index] = currentPlayer;
-  updateBoard();
-  checkResult();
-  if(gameActive && currentPlayer === '⭕'){
-    setTimeout(botMove, 500);
-  }
-}
-
-function updateBoard() {
-  document.querySelectorAll('.cell').forEach(cell => {
-    const idx = cell.dataset.index;
-    cell.textContent = board[idx];
-    if(board[idx] !== '') cell.classList.add('disabled');
-    else cell.classList.remove('disabled');
-  });
-}
-
-function updateScoreboard() {
-  scoreboard.textContent = `Игрок ❌: ${playerWins}  |  Бот ⭕: ${botWins}  |  Ничьи: ${draws}`;
-}
-
-function checkResult() {
-  let roundWon = false;
-  for(const condition of winningConditions){
-    const [a,b,c] = condition;
-    if(board[a] === '' || board[b] === '' || board[c] === '') continue;
-    if(board[a] === board[b] && board[b] === board[c]){
-      roundWon = true;
-      break;
-    }
-  }
-  if(roundWon){
-    messageElement.textContent = `Победитель: ${currentPlayer}! 🎉`;
-    gameActive = false;
-    highlightWinningCells();
-    showFireworks();
-
-    if(currentPlayer === '❌') playerWins++;
-    else if(currentPlayer === '⭕') botWins++;
-
-    updateScoreboard();
-
-    startCountdownAndRestart();
-    return;
-  }
-  if(!board.includes('')){
-    messageElement.textContent = 'Ничья! 🤝';
-    gameActive = false;
-    draws++;
-    updateScoreboard();
-
-    startCountdownAndRestart();
-    return;
-  }
-  currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-  messageElement.textContent = `Ход: ${currentPlayer}`;
-  countdownElement.textContent = '';
-}
-
-function highlightWinningCells() {
-  for(const condition of winningConditions){
-    const [a,b,c] = condition;
-    if(board[a] !== '' && board[a] === board[b] && board[b] === board[c]){
-      document.querySelector(`.cell[data-index="${a}"]`).style.backgroundColor = '#90ee90';
-      document.querySelector(`.cell[data-index="${b}"]`).style.backgroundColor = '#90ee90';
-      document.querySelector(`.cell[data-index="${c}"]`).style.backgroundColor = '#90ee90';
-    }
-  }
-}
-
-let countdownInterval;
-function startCountdownAndRestart() {
-  let timeLeft = 2;
-  countdownElement.textContent = timeLeft;
-  clearInterval(countdownInterval);
-  countdownInterval = setInterval(() => {
-    timeLeft--;
-    if(timeLeft <= 0){
-      clearInterval(countdownInterval);
-      countdownElement.textContent = '';
-      restartGame();
-    } else {
-      countdownElement.textContent = timeLeft;
-    }
-  }, 1000);
-}
-
-function restartGame() {
-  board = ['', '', '', '', '', '', '', '', ''];
-  currentPlayer = '❌';
-  gameActive = true;
-  messageElement.textContent = `Ход: ${currentPlayer}`;
-  countdownElement.textContent = '';
-  createBoard();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  fireworks = [];
-  cancelAnimationFrame(animationId);
-}
-
-// Улучшенный бот с 70% побед
-function botMove() {
-  if (!gameActive) return;
-
-  function findWinningMove(player) {
-    for (const condition of winningConditions) {
-      const [a, b, c] = condition;
-      const line = [board[a], board[b], board[c]];
-      if (line.filter(cell => cell === player).length === 2 && line.includes('')) {
-        return condition[line.indexOf('')];
+function renderWord() {
+  wordContainer.innerHTML = "";
+  shuffledWord.forEach((letter, i) => {
+    const span = document.createElement('div');
+    span.classList.add('letter');
+    span.textContent = letter.toUpperCase();
+    span.onclick = () => {
+      // Клик по букве — меняем её с соседней
+      // Простая логика — меняем с правой, если есть, иначе с левой
+      if(i < shuffledWord.length -1) {
+        [shuffledWord[i], shuffledWord[i+1]] = [shuffledWord[i+1], shuffledWord[i]];
+      } else if(i > 0) {
+        [shuffledWord[i], shuffledWord[i-1]] = [shuffledWord[i-1], shuffledWord[i]];
       }
+      renderWord();
     }
-    return null;
-  }
-
-  const randomChance = Math.random();
-
-  // 70% шанс сделать идеальный ход (выиграть или блокировать)
-  if (randomChance < 0.7) {
-    let move = findWinningMove('⭕');
-    if (move !== null) {
-      board[move] = '⭕';
-      updateBoard();
-      checkResult();
-      return;
-    }
-    move = findWinningMove('❌');
-    if (move !== null) {
-      board[move] = '⭕';
-      updateBoard();
-      checkResult();
-      return;
-    }
-  }
-
-  // 20% шанс взять центр если свободен
-  if (randomChance >= 0.7 && randomChance < 0.9) {
-    if (board[4] === '') {
-      board[4] = '⭕';
-      updateBoard();
-      checkResult();
-      return;
-    }
-  }
-
-  // 10% шанс занять свободный угол, если центр занят
-  const corners = [0, 2, 6, 8].filter(i => board[i] === '');
-  if (corners.length > 0 && randomChance >= 0.9) {
-    const corner = corners[Math.floor(Math.random() * corners.length)];
-    board[corner] = '⭕';
-    updateBoard();
-    checkResult();
-    return;
-  }
-
-  // Иначе случайный ход
-  const emptyIndices = board.map((val, idx) => val === '' ? idx : -1).filter(idx => idx !== -1);
-  if (emptyIndices.length === 0) return;
-  const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-  board[randomIndex] = '⭕';
-  updateBoard();
-  checkResult();
+    wordContainer.appendChild(span);
+  });
 }
+
+function checkAnswer() {
+  const answer = shuffledWord.join('');
+  if (answer === currentWord) {
+    score++;
+    scoreboard.textContent = `Очки: ${score}`;
+    message.style.color = "#7FFF00";
+    message.textContent = "Правильно! Следующее слово...";
+    checkButton.disabled = true;
+    setTimeout(() => {
+      if(pickNewWord()) {
+        displayShuffledWord();
+      }
+    }, 1200);
+  } else if(words.includes(answer)) {
+    // Если игрок собрал другое слово из списка (разное от текущего) - тоже засчитываем
+    score++;
+    scoreboard.textContent = `Очки: ${score}`;
+    message.style.color = "#7FFF00";
+    message.textContent = `Правильно! Это слово "${answer.toUpperCase()}". Следующее слово...`;
+    checkButton.disabled = true;
+    setTimeout(() => {
+      if(pickNewWord()) {
+        displayShuffledWord();
+      }
+    }, 1400);
+  } else {
+    message.style.color = "#FF6347";
+    message.textContent = "Неверно! Попробуй ещё.";
+  }
+}
+
+function startGame() {
+  score = 0;
+  usedIndexes.clear();
+  scoreboard.textContent = `Очки: ${score}`;
+  message.textContent = "";
+  if(pickNewWord()) {
+    displayShuffledWord();
+  }
+}
+
+checkButton.onclick = checkAnswer;
 </script>
 </body>
 </html>
