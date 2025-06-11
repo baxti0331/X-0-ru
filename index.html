@@ -60,6 +60,10 @@
   .letter:hover {
     background: rgba(255 255 255 / 0.4);
   }
+  .letter.correct-position {
+    background: #7FFF00; /* светло-зеленый */
+    color: #003300;
+  }
   #message {
     margin-top: 20px;
     color: #fff;
@@ -89,6 +93,26 @@
     background: #777;
     cursor: default;
   }
+  #hintButton {
+    margin-top: 15px;
+    font-size: 18px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 12px;
+    background: #00b894;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  #hintButton:hover:not(:disabled) {
+    background: #55efc4;
+  }
+  #hintButton:disabled {
+    background: #555;
+    cursor: default;
+  }
 </style>
 </head>
 <body>
@@ -99,6 +123,7 @@
 <div id="wordContainer"></div>
 
 <button id="checkButton" disabled>Проверить</button>
+<button id="hintButton" disabled>Подсказка</button>
 
 <div id="message"></div>
 
@@ -147,19 +172,19 @@ const words = [
   "тихое", "точка", "трава", "треск"
 ];
 
-// Скопируй/вставь сюда полный словарь из 1000+ слов, если нужно.
-
 let score = 0;
 let usedIndexes = new Set();
 let currentWord = "";
 let shuffledWord = [];
+let hintUsed = false;
+
 const scoreboard = document.getElementById('scoreboard');
 const wordContainer = document.getElementById('wordContainer');
 const checkButton = document.getElementById('checkButton');
+const hintButton = document.getElementById('hintButton');
 const message = document.getElementById('message');
 
 function shuffleArray(arr) {
-  // Фишка: простой тасование Фишера-Йетса
   for(let i = arr.length -1; i > 0; i--){
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -169,10 +194,11 @@ function shuffleArray(arr) {
 
 function pickNewWord() {
   if (usedIndexes.size === words.length) {
-    // Все слова использованы
+    message.style.color = "#fff";
     message.textContent = "Слова закончились! Игра окончена.";
     wordContainer.innerHTML = "";
     checkButton.disabled = true;
+    hintButton.disabled = true;
     return false;
   }
   let idx;
@@ -185,15 +211,17 @@ function pickNewWord() {
 }
 
 function displayShuffledWord() {
-  // Перемешать буквы текущего слова (но не так, чтобы совпало с оригиналом)
   let arr = currentWord.split('');
   do {
     arr = shuffleArray(arr.slice());
   } while(arr.join('') === currentWord);
   shuffledWord = arr;
+  hintUsed = false;
   renderWord();
   checkButton.disabled = false;
+  hintButton.disabled = false;
   message.textContent = "";
+  message.style.color = "#fff";
 }
 
 function renderWord() {
@@ -202,9 +230,12 @@ function renderWord() {
     const span = document.createElement('div');
     span.classList.add('letter');
     span.textContent = letter.toUpperCase();
+    // Если буква на правильной позиции — подсвечиваем зелёным
+    if(letter === currentWord[i]) {
+      span.classList.add('correct-position');
+    }
     span.onclick = () => {
-      // Клик по букве — меняем её с соседней
-      // Простая логика — меняем с правой, если есть, иначе с левой
+      // Меняем буквы местами с соседней (справа, если есть; иначе слева)
       if(i < shuffledWord.length -1) {
         [shuffledWord[i], shuffledWord[i+1]] = [shuffledWord[i+1], shuffledWord[i]];
       } else if(i > 0) {
@@ -224,18 +255,19 @@ function checkAnswer() {
     message.style.color = "#7FFF00";
     message.textContent = "Правильно! Следующее слово...";
     checkButton.disabled = true;
+    hintButton.disabled = true;
     setTimeout(() => {
       if(pickNewWord()) {
         displayShuffledWord();
       }
     }, 1200);
   } else if(words.includes(answer)) {
-    // Если игрок собрал другое слово из списка (разное от текущего) - тоже засчитываем
     score++;
     scoreboard.textContent = `Очки: ${score}`;
     message.style.color = "#7FFF00";
     message.textContent = `Правильно! Это слово "${answer.toUpperCase()}". Следующее слово...`;
     checkButton.disabled = true;
+    hintButton.disabled = true;
     setTimeout(() => {
       if(pickNewWord()) {
         displayShuffledWord();
@@ -247,17 +279,35 @@ function checkAnswer() {
   }
 }
 
+hintButton.onclick = () => {
+  if(hintUsed) return; // подсказка уже была
+  hintUsed = true;
+  hintButton.disabled = true;
+
+  // Подсказка: показать первую букву на правильном месте
+  // Заменяем букву в shuffledWord на правильную букву в первом символе
+  shuffledWord[0] = currentWord[0];
+  renderWord();
+
+  message.style.color = "#00ffff";
+  message.textContent = `Подсказка: первая буква "${currentWord[0].toUpperCase()}"`;
+}
+
+checkButton.onclick = () => {
+  checkAnswer();
+}
+
 function startGame() {
   score = 0;
   usedIndexes.clear();
   scoreboard.textContent = `Очки: ${score}`;
-  message.textContent = "";
   if(pickNewWord()) {
     displayShuffledWord();
   }
+  checkButton.disabled = false;
+  hintButton.disabled = false;
+  message.textContent = "";
 }
-
-checkButton.onclick = checkAnswer;
 </script>
 </body>
 </html>
