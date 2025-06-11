@@ -3,187 +3,308 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Игра: Анаграммы Улучшенная</title>
+<title>Игра: Анаграммы с зонами</title>
 <style>
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #6dd5fa, #2980b9);
     color: #222;
     margin: 0; padding: 20px;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    height: 100vh;
-    user-select: none;
-    overflow: hidden;
-    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh; user-select: none;
   }
   #scoreboard {
     color: white;
     font-size: 24px;
     font-weight: 600;
-    margin-bottom: 10px;
-    user-select: none;
-    z-index: 10;
-  }
-  #timer {
-    color: #ffd700;
-    font-size: 20px;
-    margin-bottom: 20px;
-    user-select: none;
-  }
-  #level {
-    color: #fff;
-    font-size: 18px;
     margin-bottom: 20px;
   }
-  #wordContainer {
+  #topSlots, #bottomLetters {
     display: flex;
     gap: 12px;
-    font-size: 64px;
-    color: white;
-    font-weight: 700;
-    user-select: none;
     margin-bottom: 30px;
-    min-height: 90px;
-    position: relative;
   }
-  .letter {
-    background: rgba(255 255 255 / 0.2);
-    border-radius: 10px;
+  #topSlots {
+    min-height: 90px;
+  }
+  .slot, .letter {
     width: 60px;
     height: 80px;
+    background: rgba(255 255 255 / 0.2);
+    border-radius: 10px;
+    font-size: 56px;
+    font-weight: 700;
+    color: white;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    position: relative;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
-  .letter:hover {
+  .slot {
+    background: rgba(255 255 255 / 0.1);
+  }
+  .slot.filled {
     background: rgba(255 255 255 / 0.4);
   }
-  .wrong-letter {
-    background-color: #ff6347 !important;
-    animation: pulseRed 0.6s ease;
+  .slot.correct {
+    background: #7FFF00;
+    color: #003300;
   }
-  @keyframes pulseRed {
-    0% { box-shadow: 0 0 10px #ff6347; }
-    50% { box-shadow: 0 0 20px #ff6347; }
-    100% { box-shadow: 0 0 10px #ff6347; }
+  .letter {
+    background: rgba(255 255 255 / 0.35);
   }
-  #bottomLetters {
-    margin-top: 30px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  #bottomLetters .letter {
-    width: 50px;
-    height: 60px;
-    font-size: 48px;
-    background: rgba(255 255 255 / 0.25);
+  .letter.used {
+    background: rgba(255 255 255 / 0.1);
     cursor: default;
-  }
-  #bottomLetters .highlight {
-    animation: pulseYellow 1s infinite;
-  }
-  @keyframes pulseYellow {
-    0%, 100% { box-shadow: 0 0 10px #ffd700; }
-    50% { box-shadow: 0 0 20px #ffd700; }
+    color: rgba(255 255 255 / 0.5);
   }
   #message {
-    margin-top: 10px;
+    margin-top: 20px;
     color: #fff;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 600;
     min-height: 36px;
-    user-select: none;
-    z-index: 10;
   }
-  #hintButton, #nextLevelButton {
-    margin-top: 15px;
-    font-size: 20px;
+  button {
+    font-size: 22px;
     padding: 12px 28px;
     border: none;
     border-radius: 14px;
-    background: #0984e3;
-    color: white;
-    font-weight: 700;
     cursor: pointer;
     user-select: none;
+    font-weight: 700;
+    margin-top: 10px;
     transition: background-color 0.3s ease;
   }
-  #hintButton:hover:not(:disabled),
-  #nextLevelButton:hover:not(:disabled) {
+  #checkButton {
+    background: #0984e3;
+    color: white;
+  }
+  #checkButton:hover:not(:disabled) {
     background: #74b9ff;
   }
-  #hintButton:disabled, #nextLevelButton:disabled {
+  #checkButton:disabled {
     background: #777;
     cursor: default;
   }
-  #recordBoard {
-    margin-top: 20px;
+  #hintButton {
+    background: #00b894;
     color: white;
-    font-size: 18px;
-    user-select: none;
   }
-
-  /* Фейерверк */
-  .firework {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    animation: explode 0.7s forwards ease-out;
+  #hintButton:hover:not(:disabled) {
+    background: #55efc4;
   }
-
-  @keyframes explode {
-    0% {
-      opacity: 1;
-      transform: scale(0.3);
-    }
-    100% {
-      opacity: 0;
-      transform: scale(1.8);
-    }
-  }
-
-  /* Экран загрузки */
-  #loadingScreen {
-    position: fixed;
-    inset: 0;
-    background: #0984e3;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-size: 32px;
-    font-weight: 700;
-    z-index: 9999;
-    user-select: none;
-    transition: opacity 0.5s ease;
-  }
-  #loadingScreen.fade-out {
-    opacity: 0;
-    pointer-events: none;
+  #hintButton:disabled {
+    background: #555;
+    cursor: default;
   }
 </style>
 </head>
 <body>
 
-<div id="loadingScreen">Загрузка...</div>
-
 <div id="scoreboard">Очки: 0</div>
-<div id="level">Уровень: 1</div>
-<div id="timer">Время: 60</div>
-<div id="wordContainer"></div>
-<button id="hintButton" disabled>Подсказка (-1 очко)</button>
-<button id="nextLevelButton" style="display:none;">Следующий уровень</button>
-<div id="message"></div>
-<div id="bottomLetters"></div>
-<div id="recordBoard">Рекорд: 0</div>
 
-<script src="script.js"></script>
+<div id="topSlots"></div>
+
+<div id="bottomLetters"></div>
+
+<button id="checkButton" disabled>Проверить</button>
+<button id="hintButton" disabled>Подсказка</button>
+
+<div id="message"></div>
+
+<script>
+const words = [
+  "абрик", "аванс", "аврал", "автор", "агент", "адрес", "азарт", "акция", "акула", "актер",
+  "алмаз", "альфа", "амбар", "анонс", "апорт", "арена", "арест", "армия", "атака", "афера",
+  "базис", "байка", "балет", "балка", "банда", "банка", "барон", "бегле", "белок", "билет",
+  "бинок", "биржа", "богат", "бокал", "болид", "бонус", "борец", "босс", "броня", "будка",
+  "буфет", "бухта", "взлет", "вилка", "винт", "вирус", "волна", "время", "выбор", "вышка",
+  "газон", "гайка", "галка", "гамма", "гараж", "гвард", "гвозд", "гений", "герой", "гитара",
+  "глава", "гнезд", "голос", "грань", "графа", "губка", "густо", "дача", "дверь", "дедук",
+  "дележ", "детка", "дичь", "долг", "домик", "донор", "дорог", "доска", "драка", "драма",
+  "дробь", "друг", "дымок", "еврей", "жабра", "жажда", "ждать", "желез", "жена", "жердь",
+  "живот", "жирок", "жница", "забег", "закон", "засор", "заход", "заяц", "звено", "звонк",
+  "зебра", "зодчий", "зола", "зона", "зубец", "игрок", "идол", "изба", "икона", "импорт",
+  "индик", "искры", "испуг", "кабан", "казак", "калий", "калит", "камин", "канал", "каска",
+  "квант", "кедр", "коза", "козел", "койка", "кокон", "колба", "колон", "комар", "конек",
+  "копия", "корка", "короб", "коса", "котел", "крага", "кран", "кредо", "крик", "кроль",
+  "круг", "кубик", "кулак", "купаж", "курс", "кусок", "ладан", "ладья", "лакей", "лампа",
+  "ланка", "лапка", "ларец", "латте", "лепет", "леска", "лето", "лидер", "лист", "литер",
+  "ложка", "локон", "лоза", "лыжа", "мажор", "мазок", "майор", "макет", "малый", "мантия",
+  "марка", "маска", "мастер", "матка", "медик", "мелод", "милка", "мираж", "миска", "молва",
+  "мороз", "моряк", "музей", "мусор", "набор", "накал", "напев", "наука", "начал", "невод",
+  "немец", "низко", "нитка", "новак", "нога", "носик", "обида", "облик", "огонь", "одежда",
+  "ожог", "озеро", "округ", "олива", "опера", "опасн", "оплот", "опора", "осина", "остов",
+  "отвал", "отель", "отказ", "отлив", "отрез", "офсет", "очаг", "пакет", "панда", "парус",
+  "паста", "пауза", "пена", "перец", "песок", "пикет", "пила", "план", "племя", "плоть",
+  "побег", "повар", "подвал", "поднос", "позыв", "пойма", "покуп", "поле", "полос", "помпа",
+  "порог", "посох", "поток", "почва", "почка", "празд", "прима", "проба", "пруд", "прыжок",
+  "птица", "пушка", "путь", "пчела", "работа", "радио", "разговор", "ракет", "рамка", "рапорт",
+  "растор", "рвать", "речка", "рисок", "рота", "рубка", "рулет", "рулон", "рыбак", "рысь",
+  "ряда", "рядок", "сабля", "сайт", "сало", "самец", "самка", "сапог", "сарай", "сварка",
+  "свеча", "сектор", "сено", "сила", "сироп", "сказка", "скала", "сквер", "склад", "склон",
+  "слава", "слово", "снова", "снос", "сокол", "солид", "сосуд", "спектр", "спина", "спичка",
+  "спор", "способ", "среда", "срок", "сталь", "степь", "стих", "стол", "страх", "строка",
+  "ступа", "суть", "сфера", "сырок", "сыщик", "табак", "тайна", "талант", "талия", "танец",
+  "тара", "тариф", "театр", "тело", "темп", "тенор", "терем", "тигр", "тимус", "тираж",
+  "тихое", "точка", "трава", "треск"
+];
+
+let score = 0;
+let usedIndexes = new Set();
+let currentWord = "";
+let bottomLettersArr = [];
+let topSlotsArr = [];
+let hintUsed = false;
+
+const scoreboard = document.getElementById('scoreboard');
+const topSlots = document.getElementById('topSlots');
+const bottomLetters = document.getElementById('bottomLetters');
+const checkButton = document.getElementById('checkButton');
+const hintButton = document.getElementById('hintButton');
+const message = document.getElementById('message');
+
+function pickNewWord() {
+  if (usedIndexes.size === words.length) {
+    message.style.color = "#fff";
+    message.textContent = "Слова закончились! Игра окончена.";
+    topSlots.innerHTML = "";
+    bottomLetters.innerHTML = "";
+    checkButton.disabled = true;
+    hintButton.disabled = true;
+    return false;
+  }
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * words.length);
+  } while (usedIndexes.has(idx));
+  usedIndexes.add(idx);
+  currentWord = words[idx];
+  return true;
+}
+
+function shuffleArray(arr) {
+  for(let i = arr.length -1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function setupGame() {
+  hintUsed = false;
+  message.textContent = "";
+  checkButton.disabled = true;
+  hintButton.disabled = false;
+
+  topSlotsArr = new Array(currentWord.length).fill(null);
+  bottomLettersArr = shuffleArray(currentWord.split(''));
+
+  renderSlots();
+  renderBottomLetters();
+}
+
+function renderSlots() {
+  topSlots.innerHTML = "";
+  topSlotsArr.forEach((letter, idx) => {
+    const slot = document.createElement('div');
+    slot.classList.add('slot');
+    if(letter !== null) {
+      slot.textContent = letter.toUpperCase();
+      slot.classList.add('filled');
+      if(letter === currentWord[idx]) {
+        slot.classList.add('correct');
+      }
+    } else {
+      slot.textContent = "";
+    }
+    slot.onclick = () => {
+      if(letter === null) return;
+      bottomLettersArr.push(letter);
+      topSlotsArr[idx] = null;
+      checkButton.disabled = true;
+      renderSlots();
+      renderBottomLetters();
+      message.textContent = "";
+    };
+    topSlots.appendChild(slot);
+  });
+}
+
+function renderBottomLetters() {
+  bottomLetters.innerHTML = "";
+  bottomLettersArr.forEach((letter, idx) => {
+    const letterDiv = document.createElement('div');
+    letterDiv.classList.add('letter');
+    letterDiv.textContent = letter.toUpperCase();
+    letterDiv.onclick = () => {
+      const firstEmpty = topSlotsArr.indexOf(null);
+      if(firstEmpty === -1) return;
+      topSlotsArr[firstEmpty] = letter;
+      bottomLettersArr.splice(idx, 1);
+      renderSlots();
+      renderBottomLetters();
+      checkButton.disabled = topSlotsArr.includes(null);
+      message.textContent = "";
+    }
+    bottomLetters.appendChild(letterDiv);
+  });
+}
+
+function checkAnswer() {
+  const answer = topSlotsArr.join('');
+  if(answer === currentWord) {
+    score++;
+    scoreboard.textContent = `Очки: ${score}`;
+    message.style.color = "#7FFF00";
+    message.textContent = "Правильно! Следующее слово...";
+    checkButton.disabled = true;
+    hintButton.disabled = true;
+    setTimeout(() => {
+      if(pickNewWord()) {
+        setupGame();
+      }
+    }, 1300);
+  } else {
+    message.style.color = "#FF6347";
+    message.textContent = "Неверно! Попробуй ещё.";
+  }
+}
+
+checkButton.onclick = checkAnswer;
+
+hintButton.onclick = () => {
+  if(hintUsed) return;
+  hintUsed = true;
+  // Подсказка — показать одну букву в верхних слотах на правильном месте
+  for(let i = 0; i < topSlotsArr.length; i++) {
+    if(topSlotsArr[i] !== currentWord[i]) {
+      // если буква не стоит на месте - поставить правильную
+      // если буква сверху есть, вернуть её вниз
+      if(topSlotsArr[i] !== null) {
+        bottomLettersArr.push(topSlotsArr[i]);
+      }
+      topSlotsArr[i] = currentWord[i];
+      // Удалить подсказанную букву из снизу (если там была)
+      const idx = bottomLettersArr.indexOf(currentWord[i]);
+      if(idx !== -1) bottomLettersArr.splice(idx, 1);
+      break;
+    }
+  }
+  renderSlots();
+  renderBottomLetters();
+  checkButton.disabled = topSlotsArr.includes(null);
+  hintButton.disabled = true;
+  message.textContent = "Подсказка использована";
+}
+
+if(pickNewWord()) {
+  setupGame();
+}
+</script>
+
 </body>
 </html>
