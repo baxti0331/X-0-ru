@@ -3,66 +3,62 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Игра: Анаграммы</title>
+<title>Игра: Анаграммы с зонами</title>
 <style>
-  #loaderScreen {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: linear-gradient(135deg, #74b9ff, #0984e3);
-    display: flex; justify-content: center; align-items: center; flex-direction: column;
-    color: #f0f0f0; font-size: 28px; font-weight: 700; z-index: 1000;
-  }
-  .spinner {
-    margin-top: 20px; width: 60px; height: 60px;
-    border: 8px solid rgba(240, 240, 240, 0.3);
-    border-top: 8px solid #f0f0f0; border-radius: 50%;
-    animation: spin 1.2s linear infinite;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
-  }
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #6dd5fa, #2980b9);
-    color: #222; margin: 0; padding: 20px;
+    color: #222;
+    margin: 0; padding: 20px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100vh; user-select: none; overflow: hidden;
+    height: 100vh; user-select: none;
   }
   #scoreboard {
     color: white;
     font-size: 24px;
     font-weight: 600;
     margin-bottom: 20px;
-    user-select: none;
-    z-index: 1;
   }
-  #wordContainer {
+  #topSlots, #bottomLetters {
     display: flex;
     gap: 12px;
-    font-size: 64px;
-    color: white;
-    font-weight: 700;
-    user-select: none;
     margin-bottom: 30px;
   }
-  .letter {
-    background: rgba(255 255 255 / 0.2);
-    border-radius: 10px;
+  #topSlots {
+    min-height: 90px;
+  }
+  .slot, .letter {
     width: 60px;
     height: 80px;
+    background: rgba(255 255 255 / 0.2);
+    border-radius: 10px;
+    font-size: 56px;
+    font-weight: 700;
+    color: white;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
-  .letter:hover {
+  .slot {
+    background: rgba(255 255 255 / 0.1);
+  }
+  .slot.filled {
     background: rgba(255 255 255 / 0.4);
   }
-  .letter.correct-position {
-    background: #7FFF00; /* светло-зеленый */
+  .slot.correct {
+    background: #7FFF00;
     color: #003300;
+  }
+  .letter {
+    background: rgba(255 255 255 / 0.35);
+  }
+  .letter.used {
+    background: rgba(255 255 255 / 0.1);
+    cursor: default;
+    color: rgba(255 255 255 / 0.5);
   }
   #message {
     margin-top: 20px;
@@ -70,21 +66,21 @@
     font-size: 24px;
     font-weight: 600;
     min-height: 36px;
-    user-select: none;
-    z-index: 1;
   }
-  #checkButton {
-    margin-top: 30px;
+  button {
     font-size: 22px;
     padding: 12px 28px;
     border: none;
     border-radius: 14px;
-    background: #0984e3;
-    color: white;
-    font-weight: 700;
     cursor: pointer;
     user-select: none;
+    font-weight: 700;
+    margin-top: 10px;
     transition: background-color 0.3s ease;
+  }
+  #checkButton {
+    background: #0984e3;
+    color: white;
   }
   #checkButton:hover:not(:disabled) {
     background: #74b9ff;
@@ -94,17 +90,8 @@
     cursor: default;
   }
   #hintButton {
-    margin-top: 15px;
-    font-size: 18px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 12px;
     background: #00b894;
     color: white;
-    font-weight: 700;
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.3s ease;
   }
   #hintButton:hover:not(:disabled) {
     background: #55efc4;
@@ -116,11 +103,12 @@
 </style>
 </head>
 <body>
-<div id="loaderScreen">Игра загружается...<div class="spinner"></div></div>
 
 <div id="scoreboard">Очки: 0</div>
 
-<div id="wordContainer"></div>
+<div id="topSlots"></div>
+
+<div id="bottomLetters"></div>
 
 <button id="checkButton" disabled>Проверить</button>
 <button id="hintButton" disabled>Подсказка</button>
@@ -128,13 +116,6 @@
 <div id="message"></div>
 
 <script>
-window.onload = () => {
-  setTimeout(() => {
-    document.getElementById('loaderScreen').style.display = 'none';
-    startGame();
-  }, 1500);
-};
-
 const words = [
   "абрик", "аванс", "аврал", "автор", "агент", "адрес", "азарт", "акция", "акула", "актер",
   "алмаз", "альфа", "амбар", "анонс", "апорт", "арена", "арест", "армия", "атака", "афера",
@@ -175,28 +156,23 @@ const words = [
 let score = 0;
 let usedIndexes = new Set();
 let currentWord = "";
-let shuffledWord = [];
+let bottomLettersArr = [];
+let topSlotsArr = [];
 let hintUsed = false;
 
 const scoreboard = document.getElementById('scoreboard');
-const wordContainer = document.getElementById('wordContainer');
+const topSlots = document.getElementById('topSlots');
+const bottomLetters = document.getElementById('bottomLetters');
 const checkButton = document.getElementById('checkButton');
 const hintButton = document.getElementById('hintButton');
 const message = document.getElementById('message');
-
-function shuffleArray(arr) {
-  for(let i = arr.length -1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
 
 function pickNewWord() {
   if (usedIndexes.size === words.length) {
     message.style.color = "#fff";
     message.textContent = "Слова закончились! Игра окончена.";
-    wordContainer.innerHTML = "";
+    topSlots.innerHTML = "";
+    bottomLetters.innerHTML = "";
     checkButton.disabled = true;
     hintButton.disabled = true;
     return false;
@@ -210,46 +186,77 @@ function pickNewWord() {
   return true;
 }
 
-function displayShuffledWord() {
-  let arr = currentWord.split('');
-  do {
-    arr = shuffleArray(arr.slice());
-  } while(arr.join('') === currentWord);
-  shuffledWord = arr;
-  hintUsed = false;
-  renderWord();
-  checkButton.disabled = false;
-  hintButton.disabled = false;
-  message.textContent = "";
-  message.style.color = "#fff";
+function shuffleArray(arr) {
+  for(let i = arr.length -1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
-function renderWord() {
-  wordContainer.innerHTML = "";
-  shuffledWord.forEach((letter, i) => {
-    const span = document.createElement('div');
-    span.classList.add('letter');
-    span.textContent = letter.toUpperCase();
-    // Если буква на правильной позиции — подсвечиваем зелёным
-    if(letter === currentWord[i]) {
-      span.classList.add('correct-position');
-    }
-    span.onclick = () => {
-      // Меняем буквы местами с соседней (справа, если есть; иначе слева)
-      if(i < shuffledWord.length -1) {
-        [shuffledWord[i], shuffledWord[i+1]] = [shuffledWord[i+1], shuffledWord[i]];
-      } else if(i > 0) {
-        [shuffledWord[i], shuffledWord[i-1]] = [shuffledWord[i-1], shuffledWord[i]];
+function setupGame() {
+  hintUsed = false;
+  message.textContent = "";
+  checkButton.disabled = true;
+  hintButton.disabled = false;
+
+  topSlotsArr = new Array(currentWord.length).fill(null);
+  bottomLettersArr = shuffleArray(currentWord.split(''));
+
+  renderSlots();
+  renderBottomLetters();
+}
+
+function renderSlots() {
+  topSlots.innerHTML = "";
+  topSlotsArr.forEach((letter, idx) => {
+    const slot = document.createElement('div');
+    slot.classList.add('slot');
+    if(letter !== null) {
+      slot.textContent = letter.toUpperCase();
+      slot.classList.add('filled');
+      if(letter === currentWord[idx]) {
+        slot.classList.add('correct');
       }
-      renderWord();
+    } else {
+      slot.textContent = "";
     }
-    wordContainer.appendChild(span);
+    slot.onclick = () => {
+      if(letter === null) return;
+      bottomLettersArr.push(letter);
+      topSlotsArr[idx] = null;
+      checkButton.disabled = true;
+      renderSlots();
+      renderBottomLetters();
+      message.textContent = "";
+    };
+    topSlots.appendChild(slot);
+  });
+}
+
+function renderBottomLetters() {
+  bottomLetters.innerHTML = "";
+  bottomLettersArr.forEach((letter, idx) => {
+    const letterDiv = document.createElement('div');
+    letterDiv.classList.add('letter');
+    letterDiv.textContent = letter.toUpperCase();
+    letterDiv.onclick = () => {
+      const firstEmpty = topSlotsArr.indexOf(null);
+      if(firstEmpty === -1) return;
+      topSlotsArr[firstEmpty] = letter;
+      bottomLettersArr.splice(idx, 1);
+      renderSlots();
+      renderBottomLetters();
+      checkButton.disabled = topSlotsArr.includes(null);
+      message.textContent = "";
+    }
+    bottomLetters.appendChild(letterDiv);
   });
 }
 
 function checkAnswer() {
-  const answer = shuffledWord.join('');
-  if (answer === currentWord) {
+  const answer = topSlotsArr.join('');
+  if(answer === currentWord) {
     score++;
     scoreboard.textContent = `Очки: ${score}`;
     message.style.color = "#7FFF00";
@@ -258,56 +265,46 @@ function checkAnswer() {
     hintButton.disabled = true;
     setTimeout(() => {
       if(pickNewWord()) {
-        displayShuffledWord();
+        setupGame();
       }
-    }, 1200);
-  } else if(words.includes(answer)) {
-    score++;
-    scoreboard.textContent = `Очки: ${score}`;
-    message.style.color = "#7FFF00";
-    message.textContent = `Правильно! Это слово "${answer.toUpperCase()}". Следующее слово...`;
-    checkButton.disabled = true;
-    hintButton.disabled = true;
-    setTimeout(() => {
-      if(pickNewWord()) {
-        displayShuffledWord();
-      }
-    }, 1400);
+    }, 1300);
   } else {
     message.style.color = "#FF6347";
     message.textContent = "Неверно! Попробуй ещё.";
   }
 }
 
+checkButton.onclick = checkAnswer;
+
 hintButton.onclick = () => {
-  if(hintUsed) return; // подсказка уже была
+  if(hintUsed) return;
   hintUsed = true;
-  hintButton.disabled = true;
-
-  // Подсказка: показать первую букву на правильном месте
-  // Заменяем букву в shuffledWord на правильную букву в первом символе
-  shuffledWord[0] = currentWord[0];
-  renderWord();
-
-  message.style.color = "#00ffff";
-  message.textContent = `Подсказка: первая буква "${currentWord[0].toUpperCase()}"`;
-}
-
-checkButton.onclick = () => {
-  checkAnswer();
-}
-
-function startGame() {
-  score = 0;
-  usedIndexes.clear();
-  scoreboard.textContent = `Очки: ${score}`;
-  if(pickNewWord()) {
-    displayShuffledWord();
+  // Подсказка — показать одну букву в верхних слотах на правильном месте
+  for(let i = 0; i < topSlotsArr.length; i++) {
+    if(topSlotsArr[i] !== currentWord[i]) {
+      // если буква не стоит на месте - поставить правильную
+      // если буква сверху есть, вернуть её вниз
+      if(topSlotsArr[i] !== null) {
+        bottomLettersArr.push(topSlotsArr[i]);
+      }
+      topSlotsArr[i] = currentWord[i];
+      // Удалить подсказанную букву из снизу (если там была)
+      const idx = bottomLettersArr.indexOf(currentWord[i]);
+      if(idx !== -1) bottomLettersArr.splice(idx, 1);
+      break;
+    }
   }
-  checkButton.disabled = false;
-  hintButton.disabled = false;
-  message.textContent = "";
+  renderSlots();
+  renderBottomLetters();
+  checkButton.disabled = topSlotsArr.includes(null);
+  hintButton.disabled = true;
+  message.textContent = "Подсказка использована";
+}
+
+if(pickNewWord()) {
+  setupGame();
 }
 </script>
+
 </body>
 </html>
